@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Chambers.API.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -11,10 +9,13 @@ namespace Chambers.API.Controllers
     public class FileUploadController : ControllerBase
     {
         private readonly ILogger<FileUploadController> _logger;
+        private readonly IFileUploadRepository _fileUploadRepository;
 
-        public FileUploadController(ILogger<FileUploadController> logger)
+        public FileUploadController(ILogger<FileUploadController> logger,
+            IFileUploadRepository fileUploadRepository)
         {
             _logger = logger;
+            _fileUploadRepository = fileUploadRepository;
         }
 
         [HttpGet]
