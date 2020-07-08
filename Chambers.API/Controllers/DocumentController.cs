@@ -48,12 +48,16 @@ namespace Chambers.API.Controllers
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
         public async Task<ActionResult> GetById(string blobName)
         {
-            if (string.IsNullOrWhiteSpace(blobName))
+            if (string.IsNullOrWhiteSpace(blobName)
+                || !blobName.ToLower().EndsWith(".pdf"))
             {
-                return BadRequest();
+                return BadRequest("Invalid file name or extension");
             }
 
             var stream = await _storageService.DownloadAsync(blobName);
+            if (stream == null)
+                return NotFound();
+
             string mimeType = "application/pdf";
             return new FileStreamResult(stream, mimeType)
             {

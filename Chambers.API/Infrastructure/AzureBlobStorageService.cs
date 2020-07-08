@@ -1,4 +1,5 @@
-﻿using Azure.Storage.Blobs;
+﻿using Azure;
+using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Chambers.API.Infrastructure.Repositories;
 using Chambers.API.Model;
@@ -37,8 +38,16 @@ namespace Chambers.API.Infrastructure
         {
             var blobContainerClient = await GetBlobContainerClient();
             BlobClient blobClient = blobContainerClient.GetBlobClient(blobFileName);
-            BlobDownloadInfo blob = await blobClient.DownloadAsync();
-            return blob.Content;
+
+            try
+            {
+                BlobDownloadInfo blob = await blobClient.DownloadAsync();
+                return blob.Content;
+            }
+            catch (RequestFailedException exception) when  (exception.ErrorCode == "BlobNotFound")
+            {
+                return null;
+            }
         }
 
         //todo: implement this properly
