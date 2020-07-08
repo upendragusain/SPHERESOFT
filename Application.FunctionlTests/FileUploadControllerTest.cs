@@ -9,6 +9,7 @@ using Serilog;
 using Serilog.Events;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -93,24 +94,6 @@ namespace Application.FunctionlTests
         }
 
         [Fact]
-        public async Task Will_download_an_existing_blob()
-        {
-            using (var host = await GenericCreateAndStartHost_GetTestServer())
-            {
-                //https://amazonazurestorage.blob.core.windows.net/chambersdocs/03552bff-0481-4d94-a68e-64cbc4c77f6f.pdf
-                var response = await host.GetTestServer().CreateClient()
-                    .GetAsync("/api/v1/document?blobName=03552bff-0481-4d94-a68e-64cbc4c77f6f.pdf");
-
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                Assert.True(response.Content.Headers.ContentType.MediaType == "application/pdf");
-                Assert.True(response.Content.Headers.ContentLength > 0);
-                Assert.True(response.Content.Headers.ContentDisposition.FileName == "03552bff-0481-4d94-a68e-64cbc4c77f6f.pdf");
-            }
-        }
-
-
-        [Fact]
         public async Task Will_get_list_of_all_blobs()
         {
             using (var host = await GenericCreateAndStartHost_GetTestServer())
@@ -124,6 +107,34 @@ namespace Application.FunctionlTests
                 var documents = JsonConvert.DeserializeObject<List<Document>>(responseBody);
 
                 Assert.True(documents.Count > 0);
+            }
+        }
+
+
+        //todo: use setup to create a doc and then ask for it, then clean up
+        // the below will silently pass if no files exist!!!
+        [Fact]
+        public async Task Will_download_an_existing_blob()
+        {
+            using (var host = await GenericCreateAndStartHost_GetTestServer())
+            {
+                var filesResult = await host.GetTestServer().CreateClient()
+                    .GetAsync("/api/v1/document/items");
+
+                var responseBody = await filesResult.Content.ReadAsStringAsync();
+                var documents = JsonConvert.DeserializeObject<List<Document>>(responseBody);
+                if (documents != null && documents.Any())
+                {
+                    var fileName = documents.FirstOrDefault().Name;
+                    var response = await host.GetTestServer().CreateClient()
+                        .GetAsync("/api/v1/document?blobName=" + fileName);
+
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                    Assert.True(response.Content.Headers.ContentType.MediaType == "application/pdf");
+                    Assert.True(response.Content.Headers.ContentLength > 0);
+                    Assert.True(response.Content.Headers.ContentDisposition.FileName == fileName);
+                }
             }
         }
 
