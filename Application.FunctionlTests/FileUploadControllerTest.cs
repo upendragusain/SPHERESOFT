@@ -1,10 +1,13 @@
 using Chambers.API;
+using Chambers.API.Model;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
 using Serilog;
 using Serilog.Events;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -39,6 +42,8 @@ namespace Application.FunctionlTests
 
                 var absoluteUri = response.Headers?.Location?.AbsoluteUri;
                 Assert.True(!string.IsNullOrWhiteSpace(absoluteUri));
+
+                //todo: teardown
             }
         }
 
@@ -60,6 +65,8 @@ namespace Application.FunctionlTests
                     .PostAsync("/api/v1/document/upload", multipartFormDataContent);
 
                 Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+                //todo: teardown
             }
         }
 
@@ -81,6 +88,23 @@ namespace Application.FunctionlTests
                     .PostAsync("/api/v1/document/upload", multipartFormDataContent);
 
                 Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            }
+        }
+
+        [Fact]
+        public async Task Will_get_list_of_all_blobs()
+        {
+            using (var host = await GenericCreateAndStartHost_GetTestServer())
+            {
+                var response = await host.GetTestServer().CreateClient()
+                    .GetAsync("/api/v1/document/items");
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var documents = JsonConvert.DeserializeObject<List<Document>>(responseBody);
+
+                Assert.True(documents.Count > 0);
             }
         }
 

@@ -3,8 +3,8 @@ using Azure.Storage.Blobs.Models;
 using Chambers.API.Infrastructure.Repositories;
 using Chambers.API.Model;
 using Microsoft.AspNetCore.Http;
-using Serilog;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,6 +39,45 @@ namespace Chambers.API.Infrastructure
             BlobClient blobClient = blobContainerClient.GetBlobClient(blobFileName);
             BlobDownloadInfo blob = await blobClient.DownloadAsync();
             return blob.Content;
+        }
+
+        //todo: implement this properly
+        public async Task<(string,List<Document>)> GetPagedBlobs(string continuationToken = null, int pageSizeHint = 3)
+        {
+            var blobContainerClient = await GetBlobContainerClient();
+            var resultSegment = blobContainerClient.GetBlobsAsync(BlobTraits.All, BlobStates.All)
+                .AsPages(continuationToken, pageSizeHint: pageSizeHint);
+
+            var documents = new List<Document>();
+            await foreach (Azure.Page<BlobItem> blobPage in resultSegment)
+            {
+                continuationToken = blobPage.ContinuationToken;
+                foreach (BlobItem blobItem in blobPage.Values)
+                {
+                    BlobClient blobClient = blobContainerClient.GetBlobClient(blobItem.Name);
+                    var properties = blobClient.GetProperties().Value;
+                    documents.Add(new Document(blobItem.Name, 
+                        blobClient.Uri.ToString(),
+                        properties.ContentLength));
+                }
+            }
+            return (continuationToken, documents);
+        }
+
+        public async Task<List<Document>> GetBlobs()
+        {
+            var blobContainerClient = await GetBlobContainerClient();
+            var documents = new List<Document>();
+            foreach (BlobItem blobItem in blobContainerClient.GetBlobs())
+            {
+                BlobClient blobClient = blobContainerClient.GetBlobClient(blobItem.Name);
+                var properties = blobClient.GetProperties().Value;
+                documents.Add(new Document(blobItem.Name,
+                    blobClient.Uri.ToString(),
+                    properties.ContentLength));
+            }
+            
+            return documents;
         }
 
         private async Task<BlobContainerClient> GetBlobContainerClient()

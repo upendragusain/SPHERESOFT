@@ -61,7 +61,30 @@ namespace Chambers.API.Controllers
             };
         }
 
-        
+        //[HttpGet]
+        //[Route("items")]
+        //[ProducesResponseType(typeof(PaginatedDocuments), (int)HttpStatusCode.OK)]
+        //[ProducesResponseType(typeof(IEnumerable<Document>), (int)HttpStatusCode.OK)]
+        //[ProducesResponseType((int)HttpStatusCode.BadRequest)]
+        //public async Task<IActionResult> ItemsAsync(
+        //    [FromQuery]int pageSize = 3,
+        //    [FromQuery]int pageIndex = 0)
+        //{
+        //    var totalItems = await _storageService.GetPagedBlobs(null, pageSize);
+
+        //    return Ok(model);
+        //}
+
+        [HttpGet]
+        [Route("items")]
+        [ProducesResponseType(typeof(IEnumerable<Document>), (int) HttpStatusCode.OK)]
+        [ProducesResponseType((int) HttpStatusCode.BadRequest)]
+        public async Task<IActionResult> ItemsAsync()
+        {
+            var blobs = await _storageService.GetBlobs();
+
+            return Ok(blobs);
+        }
 
 
         [HttpGet]
